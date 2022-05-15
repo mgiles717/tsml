@@ -41,7 +41,6 @@ public class AttributeMeasures {
     public static double rootEntropy(int[][] table){
         int tableFrequency = tableSum(table);
         double entropy = 0.0;
-        //System.out.println(table[0].length);
         for (int i=0; i<table[0].length; i++){
             double proportion = (double) classSum(table, i)/tableFrequency;
             if (proportion == 1.0 || proportion == 0.0){
@@ -50,6 +49,19 @@ public class AttributeMeasures {
             entropy += (proportion * log2(proportion));
         }
         return -entropy;
+    }
+
+    public static double rootImpurity(int[][] table){
+        int totalFrequency = tableSum(table);
+        double impurity = 0.0;
+        for (int i=0; i<table[0].length; i++){
+            double proportion = (double) classSum(table, i)/totalFrequency;
+            if (proportion == 0.0){
+                continue;
+            }
+            impurity += (proportion*proportion);
+        }
+        return 1-impurity;
     }
 
     public static double measureInformationGain(int[][] table){
@@ -61,15 +73,13 @@ public class AttributeMeasures {
             rowTotal[i] = attributeSum(table[i]);
             for(int value: table[i]){
                 double proportion = (double)value/rowTotal[i];
-                //System.out.println("Value: " + value + ", RowTotal: " + rowTotal[i] + ", Proportion: " + proportion);
-
-                if (proportion == 1.0 || proportion == 0.0){
+                if (proportion == 1.0 | proportion == 0.0){
                     continue;
                 }
                 infoGainValue += -((double)rowTotal[i]/tableFrequency)*(proportion * log2(proportion));
             }
         }
-        return rootEntropy(table) - (infoGainValue);
+        return rootEntropy(table) - infoGainValue;
     }
 
     public static double measureInformationGainRatio(int[][] table){
@@ -79,28 +89,48 @@ public class AttributeMeasures {
             double proportion = (double) attributeSum(row)/totalFrequency;
             splitInfo += -(proportion * log2(proportion));
         }
-        System.out.println(measureInformationGain(table) + " " + splitInfo);
         return measureInformationGain(table)/splitInfo;
     }
 
-    public static double measureGini(int[][] table){
-        return 0;
+    public static double measureGini(int[][] table) {
+        int totalFrequency = tableSum(table);
+        double impurity = 0.0;
+
+        // For each row in the table
+        for (int[] row: table) {
+            double attributeImpurity = 0.0;
+            // For each value in the row
+            for (int value: row){
+                double proportion = (double)value / attributeSum(row);
+                attributeImpurity += proportion*proportion;
+            }
+            attributeImpurity = 1-attributeImpurity;
+            impurity += attributeImpurity*((double)attributeSum(row)/totalFrequency);
+        }
+        return rootImpurity(table) - impurity;
     }
 
-    public static double measureChiSquared(int[][] table){
-        return 0;
+    public static double measureChiSquared(int[][] table) {
+        int totalFrequency = tableSum(table);
+        double chiValue = 0.0;
+        for(int i=0; i<table.length; i++){
+            for(int j=0; j<table[0].length; j++){
+                double value = table[i][j];
+                double expected = (attributeSum(table[i])*((double)classSum(table, j)/(double)totalFrequency));
+                chiValue += ((value-expected)*(value-expected))/expected;
+            }
+        }
+        return chiValue;
     }
 
     public static void main(String[] args){
         int[][] peaty = {{4,0}, {1,5}};
-        int[][] test_array = {{4,3,1},{1,3,4},{3,1,1}};
-        //System.out.println(tableSum(test_array));
-        System.out.println(rootEntropy(peaty));
-        //System.out.println(classSum(peaty, 1));
+        //int[][] test_3x3_array = {{4,3,1},{1,3,4},{3,1,1}};
         System.out.println("Measure Information Gain for Peaty: " + measureInformationGain(peaty));
         System.out.println("Measure Information Gain Ratio for Peaty: " + measureInformationGainRatio(peaty));
-        //System.out.println("Measure Chi Squared for Peaty: " + measureChiSquared());
-        //System.out.println("Measure Gini for Peaty: " + measureGini());
+        System.out.println("Measure Gini for Peaty: " + measureGini(peaty));
+        System.out.println("Measure Chi Squared for Peaty: " + measureChiSquared(peaty));
+
 
     }
 
